@@ -1,2 +1,5 @@
-__pycache__/
-*.pyc
+# Ignorar carpetas __pycache__ en cualquier ubicación
+**/__pycache__/
+
+# Ignorar archivos compilados .pyc en cualquier ubicación
+**/*.pyc
