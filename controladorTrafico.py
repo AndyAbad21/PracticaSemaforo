@@ -106,8 +106,7 @@ class ControladorTrafico:
                 continue
 
     def mostrar_tablero(self):
-        os.system("cls" if os.name == "nt" else "clear")
-
+        #os.system("cls" if os.name == "nt" else "clear")  #actualiza el tablero y los prints de los vehiculos que llegan
         def pintar_lineas(nombre):
             color_actual = self.estado_semaforos[nombre]
             return [
