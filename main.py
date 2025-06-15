@@ -1,6 +1,6 @@
 import threading
-from controladorTrafico import ControladorTrafico
-from carssimulation import SimuladorVehiculos
+from controlador_trafico import ControladorTrafico
+from cars_simulation import SimuladorVehiculos
 
 if __name__ == "__main__":
     controlador = ControladorTrafico()
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     threading.Thread(target=simulador.procesar_vehiculos, daemon=True).start()
 
     # Inicia la simulación de los semáforos
-    controlador.iniciar_simulacion(ciclos=5)
+    controlador.iniciar_simulacion(ciclos=1)
 
     # Muestra el reporte final
     simulador.reporte()

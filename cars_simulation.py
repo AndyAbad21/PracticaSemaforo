@@ -2,12 +2,13 @@ import threading
 import time
 import random
 from vehiculo import Vehiculo
-import os
 
 class SimuladorVehiculos:
     def __init__(self, controlador):
         self.controlador = controlador
+        # Cola de los vehiculos en cada uno de las direcciones
         self.colas = {d: [] for d in ["Norte", "Sur", "Este", "Oeste"]}
+        # Para evitar que los procesos accedan al mismo tiempo a la variable compartida
         self.lock = threading.Lock()
         self.direcciones = list(self.colas.keys())
         self.vehiculos_cruzados = {d: 0 for d in self.direcciones}
