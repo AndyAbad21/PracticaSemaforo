@@ -13,7 +13,7 @@ if __name__ == "__main__":
     threading.Thread(target=simulador.procesar_vehiculos, daemon=True).start()
 
     # Inicia la simulación de los semáforos
-    controlador.iniciar_simulacion(ciclos=1)
+    controlador.iniciar_simulacion(ciclos=5)
 
     # Muestra el reporte final
     simulador.reporte()
