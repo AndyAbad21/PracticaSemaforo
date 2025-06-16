@@ -1,19 +1,26 @@
-import threading
+import tkinter as tk
 from controlador_trafico import ControladorTrafico
 from cars_simulation import SimuladorVehiculos
+from gui import TrafficGUIReal
 
 if __name__ == "__main__":
     controlador = ControladorTrafico()
     simulador = SimuladorVehiculos(controlador)
 
-    # Hilo para generar vehículos
-    threading.Thread(target=simulador.generar_vehiculos, daemon=True).start()
+    root = tk.Tk()
 
-    # Hilo para hacer que los vehículos avancen si el semáforo está en verde
-    threading.Thread(target=simulador.procesar_vehiculos, daemon=True).start()
+    # Lista de rutas a tus PNG reales:
+    car_images = [
+        "assets/coche-de-competicion.png",
+        "assets/coche-de-competicion(1).png",
+        "assets/coche-de-carreras.png",
+        "assets/coche.png",
+        "assets/auto.png",
+        "assets/auto(1).png",
+        "assets/vista-superior-del-coche.png",
+        "assets/vehiculo.png",
+        "assets/vehiculo(1).png"
+    ]
 
-    # Inicia la simulación de los semáforos
-    controlador.iniciar_simulacion(ciclos=5)
-
-    # Muestra el reporte final
-    simulador.reporte()
+    app = TrafficGUIReal(root, controlador, simulador, car_images, ciclos=5)
+    root.mainloop()
