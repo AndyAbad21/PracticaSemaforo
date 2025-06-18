@@ -95,12 +95,23 @@ class TrafficGUIReal:
         self._paint_lights()
         self._spawn_cars()
         self._move_cars()
+        
+        # ---> ASEGURAR semáforos encima de todo
+        for lights in self.sem_gui.values():
+            for circle in lights.values():
+                self.cv.tag_raise(circle)
+                
         self.cv.after(30, self._loop)
 
     def _paint_lights(self):
-        col = {"rojo": "red", "amarillo": "yellow", "verde": "green"}
-        for d, circ in self.sem_gui.items():
-            self.cv.itemconfig(circ, fill=col[self.ctrl.estado_semaforos[d]])
+        col_map = {"rojo": "red", "amarillo": "yellow", "verde": "green"}
+        for d, lights in self.sem_gui.items():
+            estado = self.ctrl.estado_semaforos[d]
+            # Apaga todas primero
+            for c in ["rojo", "amarillo", "verde"]:
+                self.cv.itemconfig(lights[c], fill="gray")
+            # Enciende solo la correcta
+            self.cv.itemconfig(lights[estado], fill=col_map[estado])
 
     def _spawn_cars(self):
         for d, carriles in self.sim.colas.items():
@@ -129,10 +140,9 @@ class TrafficGUIReal:
                     else:
                         x, y = -SPAWN_OUT, LANE_COORD[d]
                     v.icon = CarIcon(self.cv, random.choice(self.pngs_by_dir[d]), x, y, d)
-                    v.icon.lane = lane_index  # 👉 importante: guardar carril
+                    v.icon.lane = lane_index
                     self.cars.append(v.icon)
                     break
-
 
     def _move_cars(self):
         icon, gap = ICON_SIZE, GAP
@@ -177,7 +187,6 @@ class TrafficGUIReal:
                         stop = True
                     elif d == "Oeste" and x < STOP_LINE[d] and x + CAR_SPEED >= ic.target_x:
                         stop = True
-
                 elif ic.slot > 0:
                     same_dir = [c for c in self.cars if c.d == d and not c.has_crossed and c.slot == ic.slot - 1]
                     if same_dir:
@@ -213,6 +222,7 @@ class TrafficGUIReal:
         mid = WIN // 2
         road_w = 120
 
+        # --- Fondo gris con vías ---
         self.cv.create_rectangle(mid - road_w // 2, 0, mid + road_w // 2, WIN, fill="dimgray")
         self.cv.create_rectangle(0, mid - road_w // 2, WIN, mid + road_w // 2, fill="dimgray")
 
@@ -220,7 +230,6 @@ class TrafficGUIReal:
             self.cv.create_line(mid, i, mid, i + 20, fill="white", width=2)
             self.cv.create_line(i, mid, i + 20, mid, fill="white", width=2)
 
-        zebra_w = 60
         stripe_h = 5
         gap = 10
 
@@ -236,11 +245,60 @@ class TrafficGUIReal:
             xE = CROSS_LINE["Este"] + i * (stripe_h + gap)
             self.cv.create_rectangle(xE, mid - road_w // 2, xE + stripe_h, mid + road_w // 2, fill="white")
 
-        coord = {
-            "Norte": (mid, STOP_LINE["Norte"] - 40),
-            "Sur": (mid, STOP_LINE["Sur"] + 40),
-            "Oeste": (STOP_LINE["Oeste"] - 40, mid),
-            "Este": (STOP_LINE["Este"] + 40, mid)
+        # ---- Semáforos ----
+        radius = 10
+        offset = 25
+
+        self.sem_gui = {}
+
+        nx = LANE_COORD["Norte"]
+        ny = STOP_LINE["Norte"] - 40
+        self.sem_gui["Norte"] = {
+            "rojo": self.cv.create_oval(nx - offset - radius, ny - radius, nx - offset + radius, ny + radius, fill="gray"),
+            "amarillo": self.cv.create_oval(nx - radius, ny - radius, nx + radius, ny + radius, fill="gray"),
+            "verde": self.cv.create_oval(nx + offset - radius, ny - radius, nx + offset + radius, ny + radius, fill="gray"),
         }
-        for d, (x, y) in coord.items():
-            self.sem_gui[d] = self.cv.create_oval(x - 15, y - 15, x + 15, y + 15, fill="gray")
+
+        sx = LANE_COORD["Sur"]
+        sy = STOP_LINE["Sur"] + 40
+        self.sem_gui["Sur"] = {
+            "rojo": self.cv.create_oval(sx - offset - radius, sy - radius, sx - offset + radius, sy + radius, fill="gray"),
+            "amarillo": self.cv.create_oval(sx - radius, sy - radius, sx + radius, sy + radius, fill="gray"),
+            "verde": self.cv.create_oval(sx + offset - radius, sy - radius, sx + offset + radius, sy + radius, fill="gray"),
+        }
+
+        wx = STOP_LINE["Oeste"] - 40
+        wy = LANE_COORD["Oeste"]
+        self.sem_gui["Oeste"] = {
+            "rojo": self.cv.create_oval(wx - radius, wy - offset - radius, wx + radius, wy - offset + radius, fill="gray"),
+            "amarillo": self.cv.create_oval(wx - radius, wy - radius, wx + radius, wy + radius, fill="gray"),
+            "verde": self.cv.create_oval(wx - radius, wy + offset - radius, wx + radius, wy + offset + radius, fill="gray"),
+        }
+
+        ex = STOP_LINE["Este"] + 40
+        ey = LANE_COORD["Este"]
+        self.sem_gui["Este"] = {
+            "rojo": self.cv.create_oval(ex - radius, ey - offset - radius, ex + radius, ey - offset + radius, fill="gray"),
+            "amarillo": self.cv.create_oval(ex - radius, ey - radius, ex + radius, ey + radius, fill="gray"),
+            "verde": self.cv.create_oval(ex - radius, ey + offset - radius, ex + radius, ey + offset + radius, fill="gray"),
+        }
+
+        # Carga base sin tamaño fijo
+        forest1_img = Image.open("assets/forest-1.jpg")
+        forest2_img = Image.open("assets/forest-2.jpg")
+
+        # Cada bloque libre es: 0 a cruce (Norte/Oeste) o cruce a fin (Sur/Este)
+        block_size = mid - road_w // 2
+
+        # Redimensiona al tamaño de bloque
+        self.forest1 = ImageTk.PhotoImage(forest1_img.resize((block_size, block_size)))
+        self.forest2 = ImageTk.PhotoImage(forest2_img.resize((block_size, block_size)))
+
+        # Superior izquierda
+        self.cv.create_image(block_size // 2, block_size // 2, image=self.forest1)
+        # Superior derecha
+        self.cv.create_image(WIN - block_size // 2, block_size // 2, image=self.forest2)
+        # Inferior izquierda
+        self.cv.create_image(block_size // 2, WIN - block_size // 2, image=self.forest2)
+        # Inferior derecha
+        self.cv.create_image(WIN - block_size // 2, WIN - block_size // 2, image=self.forest1)
