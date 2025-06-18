@@ -171,14 +171,15 @@ class TrafficGUIReal:
             if not ic.has_crossed:
                 red = self.ctrl.estado_semaforos[d] != "verde"
                 if ic.slot == 0 and red:
-                    if d == "Norte" and y + CAR_SPEED >= ic.target_y:
+                    if d == "Norte" and y < STOP_LINE[d] and y + CAR_SPEED >= ic.target_y:
                         stop = True
-                    elif d == "Sur" and y - CAR_SPEED <= ic.target_y:
+                    elif d == "Sur" and y > STOP_LINE[d] and y - CAR_SPEED <= ic.target_y:
                         stop = True
-                    elif d == "Este" and x - CAR_SPEED <= ic.target_x:
+                    elif d == "Este" and x > STOP_LINE[d] and x - CAR_SPEED <= ic.target_x:
                         stop = True
-                    elif d == "Oeste" and x + CAR_SPEED >= ic.target_x:
+                    elif d == "Oeste" and x < STOP_LINE[d] and x + CAR_SPEED >= ic.target_x:
                         stop = True
+
                 elif ic.slot > 0:
                     same_dir = [c for c in self.cars if c.d == d and not c.has_crossed and c.slot == ic.slot - 1]
                     if same_dir:
