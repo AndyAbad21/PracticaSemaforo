@@ -18,11 +18,12 @@ class SimuladorVehiculos:
         self.vehiculos_cruzados = {d: 0 for d in self.direcciones}
         self.tiempos_espera = {d: [] for d in self.direcciones}
         self.id_counter = 1
+        self.running = True
 
     # se le puede añadir un numero de vehiculos a la simulacion
     def generar_vehiculos(self):  # , cant=5):
         # contador = 0
-        while True:
+        while self.running:
             direccion = random.choice(self.direcciones)
             carril = random.randint(0, 1)  # Elegir un carril aleatorio
             with self.lock:
@@ -37,7 +38,7 @@ class SimuladorVehiculos:
         # self.generando = False
 
     def procesar_vehiculos(self):
-        while True:
+        while self.running:
             time.sleep(1)  # Tiempo que demora en pasar el vehiculo
             with self.lock:
                 self.mostrar_estado_vehiculos()  # ← mostrar el tablero de vehículos
@@ -56,14 +57,16 @@ class SimuladorVehiculos:
                                     f"🟢 [{direccion} - Carril {i+1}] Vehículo {vehiculo.id} cruzó. Esperó {vehiculo.tiempo_espera():.2f} segundos."
                                 )
 
+    def detener(self):
+        self.running = False
+
     def reporte(self):
-        print("\n--- REPORTE FINAL ---")
+        lines = ["\n--- REPORTE FINAL ---"]
         for direccion in self.direcciones:
             total = self.vehiculos_cruzados[direccion]
             promedio = (sum(self.tiempos_espera[direccion]) / total) if total > 0 else 0
-            print(
-                f"{direccion}: {total} vehículos cruzaron. Tiempo promedio de espera: {promedio:.2f}s"
-            )
+            lines.append(f"{direccion}: {total} vehículos cruzaron. Tiempo promedio de espera: {promedio:.2f}s")
+        return "\n".join(lines)
 
     def mostrar_estado_vehiculos(self):
         # os.system("cls" if os.name == "nt" else "clear") #actualiza el tablero y los prints de los vehiculos que llegan
