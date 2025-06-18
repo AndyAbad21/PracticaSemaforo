@@ -104,37 +104,35 @@ class TrafficGUIReal:
 
     def _spawn_cars(self):
         for d, carriles in self.sim.colas.items():
-            cola = [v for lane in carriles for v in lane]
-            recent = [c for c in self.cars if c.d == d and not c.has_crossed]
-            allow_spawn = True
-            if recent:
-                last = sorted(recent, key=lambda c: c.slot)[-1]
-                lx, ly = last.pos()
-                ref = -SPAWN_OUT if d in ("Norte", "Oeste") else WIN + SPAWN_OUT
-                if d in ("Norte", "Sur"):
-                    if abs(ly - ref) < ICON_SIZE + GAP * 2:
+            for lane_index, lane in enumerate(carriles):
+                recent = [c for c in self.cars if c.d == d and c.lane == lane_index and not c.has_crossed]
+                allow_spawn = True
+                if recent:
+                    last = sorted(recent, key=lambda c: c.slot)[-1]
+                    lx, ly = last.pos()
+                    ref = -SPAWN_OUT if d in ("Norte", "Oeste") else WIN + SPAWN_OUT
+                    dist = abs(ly - ref) if d in ("Norte", "Sur") else abs(lx - ref)
+                    if dist < ICON_SIZE + GAP * 2:
                         allow_spawn = False
-                else:
-                    if abs(lx - ref) < ICON_SIZE + GAP * 2:
-                        allow_spawn = False
-            if not allow_spawn:
-                continue
-
-            for v in cola:
-                if hasattr(v, "icon"):
+                if not allow_spawn:
                     continue
-                if d == "Norte":
-                    x, y = LANE_COORD[d], -SPAWN_OUT
-                elif d == "Sur":
-                    x, y = LANE_COORD[d], WIN + SPAWN_OUT
-                elif d == "Este":
-                    x, y = WIN + SPAWN_OUT, LANE_COORD[d]
-                else:
-                    x, y = -SPAWN_OUT, LANE_COORD[d]
-                # → Usa la imagen correcta:
-                v.icon = CarIcon(self.cv, random.choice(self.pngs_by_dir[d]), x, y, d)
-                self.cars.append(v.icon)
-                break
+
+                for v in lane:
+                    if hasattr(v, "icon"):
+                        continue
+                    if d == "Norte":
+                        x, y = LANE_COORD[d], -SPAWN_OUT
+                    elif d == "Sur":
+                        x, y = LANE_COORD[d], WIN + SPAWN_OUT
+                    elif d == "Este":
+                        x, y = WIN + SPAWN_OUT, LANE_COORD[d]
+                    else:
+                        x, y = -SPAWN_OUT, LANE_COORD[d]
+                    v.icon = CarIcon(self.cv, random.choice(self.pngs_by_dir[d]), x, y, d)
+                    v.icon.lane = lane_index  # 👉 importante: guardar carril
+                    self.cars.append(v.icon)
+                    break
+
 
     def _move_cars(self):
         icon, gap = ICON_SIZE, GAP

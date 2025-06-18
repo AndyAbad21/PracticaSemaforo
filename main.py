@@ -12,21 +12,21 @@ if __name__ == "__main__":
     # Lista agrupada por dirección:
     car_images = {
         "Norte": [
-            "assets/norte-car.png",
-            "assets/norte-car-1.png"
-        ],
-        "Sur": [
             "assets/sur-car.png",
             "assets/sur-car-2.png"
         ],
+        "Sur": [
+            "assets/norte-car.png",
+            "assets/norte-car-1.png"
+        ],
         "Este": [
+            "assets/oeste-car.png",
+            "assets/oeste-car-1.png"
+        ],
+        "Oeste": [
             "assets/este-car.png",
             "assets/este-car-1.png",
             "assets/este-car-2.png"
-        ],
-        "Oeste": [
-            "assets/oeste-car.png",
-            "assets/oeste-car-1.png"
         ]
     }
 
