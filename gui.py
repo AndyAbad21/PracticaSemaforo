@@ -55,8 +55,9 @@ class CarIcon:
         self.cv = cv
         self.id = cv.create_image(x, y, image=img)
         self.d = d
-        self.stopped = False  # Si está detenido por semáforo o vehículo delante
-        self.has_crossed = False  # Marca si ya cruzó la intersección
+        self.stopped = False
+        self.has_crossed = False
+        self.slot = None  # ← ← ← ¡ESTA LÍNEA FALTABA!
 
     def pos(self):
         return self.cv.coords(self.id)
@@ -192,70 +193,76 @@ class TrafficGUIReal:
         - Detecta cuando cruzan y elimina los que salen de pantalla.
         """
         icon, gap = ICON_SIZE, GAP
+        separation = icon + gap  # Espacio entre vehículos
 
         # Actualiza posición objetivo para cada auto
         for d, carriles in self.sim.colas.items():
-            cola = [v for lane in carriles for v in lane if not v.icon.has_crossed]
+            cola = [v for lane in carriles for v in lane if hasattr(v, "icon") and not v.icon.has_crossed]
             for i, v in enumerate(cola):
                 ic = v.icon
                 base = STOP_LINE[d]
-                offset = SIGN[d] * i * (icon + gap)
+                offset = SIGN[d] * i * separation
+
                 if d in ("Norte", "Sur"):
                     ic.target_x = LANE_COORD[d]
                     ic.target_y = base + offset
                 else:
                     ic.target_x = base + offset
-                    ic.target_y = LANE_COORD[d]
-                ic.slot = i
+                ic.slot = i  # Asignación correcta del slot
+        # Este slot se usa luego para detener por distancia
 
-        dead = []
-        for ic in self.cars:
-            x, y = ic.pos()
-            d = ic.d
+            dead = []
+            for ic in self.cars:
+                x, y = ic.pos()
+                d = ic.d
 
-            # Marcar como cruzado cuando pasa el cruce
-            if d == "Norte" and y >= CROSS_LINE[d] + icon:
-                ic.has_crossed = True
-            elif d == "Sur" and y <= CROSS_LINE[d] - icon:
-                ic.has_crossed = True
-            elif d == "Este" and x <= CROSS_LINE[d] - icon:
-                ic.has_crossed = True
-            elif d == "Oeste" and x >= CROSS_LINE[d] + icon:
-                ic.has_crossed = True
+                # Detectar si cruzó completamente
+                crossed = {
+                    "Norte": y >= CROSS_LINE[d] + icon,
+                    "Sur":   y <= CROSS_LINE[d] - icon,
+                    "Este":  x <= CROSS_LINE[d] - icon,
+                    "Oeste": x >= CROSS_LINE[d] + icon,
+                }
+                if crossed[d]:
+                    ic.has_crossed = True
 
-            # Control de parada por semáforo o auto delante
-            stop = False
-            if not ic.has_crossed:
-                red = self.ctrl.estado_semaforos[d] != "verde"
-                if ic.slot == 0 and red:
-                    if d == "Norte" and y < STOP_LINE[d] and y + CAR_SPEED >= ic.target_y:
-                        stop = True
-                    elif d == "Sur" and y > STOP_LINE[d] and y - CAR_SPEED <= ic.target_y:
-                        stop = True
-                    elif d == "Este" and x > STOP_LINE[d] and x - CAR_SPEED <= ic.target_x:
-                        stop = True
-                    elif d == "Oeste" and x < STOP_LINE[d] and x + CAR_SPEED >= ic.target_x:
-                        stop = True
-                elif ic.slot > 0:
-                    same_dir = [c for c in self.cars if c.d == d and not c.has_crossed and c.slot == ic.slot - 1]
-                    if same_dir:
-                        front = same_dir[0]
-                        fx, fy = front.pos()
-                        dist = abs(y - fy) if d in ("Norte", "Sur") else abs(x - fx)
-                        if dist < icon + gap:
+                # Determinar si debe detenerse (si no ha cruzado todavía)
+                stop = False
+                if not ic.has_crossed:
+                    semaforo_rojo = self.ctrl.estado_semaforos[d] != "verde"
+
+                    # Primer vehículo, se detiene en STOP_LINE si semáforo está rojo
+                    if ic.slot is not None and ic.slot == 0 and semaforo_rojo:
+                        if d == "Norte" and y < ic.target_y and y + CAR_SPEED >= ic.target_y:
                             stop = True
+                        elif d == "Sur" and y > ic.target_y and y - CAR_SPEED <= ic.target_y:
+                            stop = True
+                        elif d == "Este" and x > ic.target_x and x - CAR_SPEED <= ic.target_x:
+                            stop = True
+                        elif d == "Oeste" and x < ic.target_x and x + CAR_SPEED >= ic.target_x:
+                            stop = True
+                    # Vehículos detrás: se detienen si están demasiado cerca del anterior
+                    # Vehículos detrás: se detienen si están demasiado cerca del anterior
+                    elif ic.slot is not None and ic.slot > 0:
+                        prev = [c for c in self.cars if c.d == d and not c.has_crossed and c.slot == ic.slot - 1]
+                        if prev:
+                            front = prev[0]
+                            fx, fy = front.pos()
+                            dist = abs(y - fy) if d in ("Norte", "Sur") else abs(x - fx)
+                            if dist < separation:
+                                stop = True
 
-            ic.stopped = stop
-            ic.move()
 
-            # Elimina autos que salen de la ventana
-            nx, ny = ic.pos()
-            if nx < -SPAWN_OUT or nx > WIN + SPAWN_OUT or ny < -SPAWN_OUT or ny > WIN + SPAWN_OUT:
-                ic.destroy()
-                dead.append(ic)
+                ic.stopped = stop
+                ic.move()
 
-        for ic in dead:
-            self.cars.remove(ic)
+                nx, ny = ic.pos()
+                if nx < -SPAWN_OUT or nx > WIN + SPAWN_OUT or ny < -SPAWN_OUT or ny > WIN + SPAWN_OUT:
+                    ic.destroy()
+                    dead.append(ic)
+            for ic in dead:
+                self.cars.remove(ic)
+
 
     def _start(self):
         """
