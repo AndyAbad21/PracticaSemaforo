@@ -21,7 +21,7 @@ class Semaforo(multiprocessing.Process):
 
             self._cambiar_color("verde", self.green_duration)
             self._cambiar_color("amarillo", self.yellow_duration)
-            self._cambiar_color("rojo", 0.5)
+            self._cambiar_color("rojo", 1)
 
             # print(f"[{self.name}] Esperando en la barrera...")
             self.barrier.wait()  # Espera que el semaforo contrario termine (N-S)(E-O)
