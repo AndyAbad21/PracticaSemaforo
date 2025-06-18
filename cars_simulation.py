@@ -34,12 +34,12 @@ class SimuladorVehiculos:
                 )
                 # contador += 1
                 self.id_counter += 1
-            time.sleep(random.uniform(0.5, 1))  # Frecuencia de generacion de vehiculos
+            time.sleep(random.uniform(1.5, 3.5))  # Frecuencia de generacion de vehiculos
         # self.generando = False
 
     def procesar_vehiculos(self):
         while self.running:
-            time.sleep(1)  # Tiempo que demora en pasar el vehiculo
+            time.sleep(4)  # Tiempo que demora en pasar el vehiculo
             with self.lock:
                 self.mostrar_estado_vehiculos()  # ← mostrar el tablero de vehículos
                 for direccion, carriles in self.colas.items():
@@ -53,6 +53,7 @@ class SimuladorVehiculos:
                                 self.tiempos_espera[direccion].append(
                                     vehiculo.tiempo_espera()
                                 )
+                                # time.sleep(1)  # Simula el tiempo de cruce
                                 print(
                                     f"🟢 [{direccion} - Carril {i+1}] Vehículo {vehiculo.id} cruzó. Esperó {vehiculo.tiempo_espera():.2f} segundos."
                                 )
